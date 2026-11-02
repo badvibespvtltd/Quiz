@@ -14,5 +14,5 @@
     if(!counted&&storage){try{localStorage.setItem(FLAG,"1")}catch(e){}}
     el.textContent=d.value.toLocaleString()+" unique visitor"+(d.value===1?"":"s");
     el.hidden=false;
-  }).catch(function(){});
+  }).catch(function(e){console.warn("Visitor counter unavailable:",e&&e.message?e.message:e)});
 })();
