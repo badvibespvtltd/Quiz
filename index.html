@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tempest · Quiz Practice</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="180x180" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<script src="js/theme.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/dark.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="top">
+  <h1><span class="brand">Tempest</span><span class="crumb" id="crumb">Quiz Practice</span></h1>
+  <div class="tools">
+    <button class="btn ghost" id="btnTheme" type="button">Light mode</button>
+  </div>
+</header>
+
+<section class="panel" id="quiz" aria-label="Quiz practice" style="max-width:1500px;margin:14px auto">
+  <div class="bar">Quiz Practice</div>
+  <div class="qwrap" id="qbody"></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="vsil" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"/><feGaussianBlur stdDeviation="1.6"/><feComponentTransfer><feFuncA type="linear" slope="14" intercept="-6"/></feComponentTransfer></filter></svg>
+</section>
+
+
+<script src="data/pokemon.js"></script>
+<script src="data/quiz-data.js"></script>
+<script src="data/quiz-moves.js"></script>
+<script src="data/quiz-badges.js"></script>
+<script src="data/quiz-footprints.js"></script>
+<script src="data/quiz-items.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/quizpage.js"></script>
+</body>
+</html>
