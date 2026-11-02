@@ -1,0 +1,8 @@
+.qpage{display:block}
+.sbanner{display:none}
+@media(min-width:1300px){
+  .qpage{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr) minmax(0,300px);gap:0 16px;align-items:start;padding:0 16px}
+  .qpage #quiz{margin:14px 0!important;min-width:0}
+  .sbanner{display:flex;position:sticky;top:14px;margin-top:14px;justify-content:center}
+  .sbanner img{display:block;width:100%;height:auto;max-height:calc(100vh - 100px);object-fit:contain;border-radius:16px;border:1px solid #ffffff22;box-shadow:0 10px 30px #0008}
+}
