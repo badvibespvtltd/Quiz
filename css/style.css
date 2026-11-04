@@ -306,3 +306,17 @@ a.btn{text-decoration:none;display:inline-block}
 .btn.qdrillbtn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(140deg,var(--kc,#d00000),var(--kc2,#800000));border-color:var(--kc2,#8a0000)}
 .btn.qdrillbtn:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:640px){.qtabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding:4px 2px 8px}.qtab{flex:none}}
+kbd{font:600 10px/1 ui-monospace,Menlo,Consolas,monospace;border:1px solid currentColor;border-radius:4px;padding:2px 4px;margin-left:4px;opacity:.65}
+.qopts{display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:center;align-items:center;margin:12px 0 0}
+.qopt{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.qchk{cursor:pointer;user-select:none}
+.qchk input{width:auto}
+.qseg{display:flex;border:1px solid #999;border-radius:6px;overflow:hidden}
+.qsegb{border:0;border-right:1px solid #999;background:#fff;color:#333;padding:4px 11px;font-size:12px;font-weight:700}
+.qsegb:last-child{border-right:0}
+.qsegb:hover{background:#eee}
+.qsegb[aria-pressed=true]{background:linear-gradient(var(--red1),var(--red2));color:#fff}
+.qtimebar{max-width:680px;height:6px;margin:-4px auto 8px;background:#0002;border-radius:3px;overflow:hidden}
+.qtimebar i{display:block;height:100%;width:100%;background:#2a9d5c;transition:width .1s linear,background .2s}
+.qtimebar i.low{background:#d62828}
+#qtime.low{color:#d62828;font-weight:700}

@@ -53,7 +53,8 @@ const ALIAS={"Up Grade":["Upgrade"],"Kings Rock":["King's Rock"]};
 const SLOT=/[\p{L}\p{N}]/u;
 const ITEMFILE=new Map((IT||[]).map(x=>[norm(x.name),x.file]));
 
-let pick=null;
+let pick=null,adv=0;
+const LIMITS=[0,10,20,30,60];
 let S={t:{},weak:{},best:null,opt:{}},P=null,run=null,timer=0,appWasHidden=true,loaderWasHidden=true;
 try{const r=JSON.parse(localStorage.getItem(LS)||"null");if(r&&r.t)S=Object.assign(S,r)}catch(e){}
 const opt=()=>S.opt||(S.opt={});
@@ -214,9 +215,10 @@ function planKinds(n,kinds){
 function startRun(kinds,n){
   P=prepare();
   if(!P)return;
+  clearTimeout(adv);
   const used=new Set();
   const plan=kinds.length===1?Array(n).fill(kinds[0]):planKinds(n,kinds);
-  run={qs:plan.map(k=>makeQ(k,used)),i:0,res:[],t0:Date.now(),qt:0,answered:false};
+  run={qs:plan.map(k=>makeQ(k,used)),i:0,res:[],t0:Date.now(),qt:0,answered:false,limit:+opt().limit||0,auto:opt().auto!==false};
   showQ();
 }
 
@@ -234,11 +236,13 @@ function hintHTML(q){
 function slotCount(q){return [...q.mask].filter(c=>SLOT.test(c)).length}
 
 function showQ(){
+  clearTimeout(adv);
   const q=run.qs[run.i];
   run.qt=Date.now();run.answered=false;
   const box=$("#qbody");
   box.innerHTML=`
-  <div class="qtop"><span>Question <b>${run.i+1}</b> / ${run.qs.length}</span><span>Score <b>${run.res.filter(r=>r.ok).length}</b></span><span id="qtime">0.0s</span></div>
+  <div class="qtop"><span>Question <b>${run.i+1}</b> / ${run.qs.length}</span><span>Score <b>${run.res.filter(r=>r.ok).length}</b></span><span id="qtime">${run.limit?run.limit.toFixed(1):"0.0"}s</span></div>
+  ${run.limit?'<div class="qtimebar"><i id="qtbar"></i></div>':""}
   <div class="qcard ${q.layout}${q.mask?" hashint":""}" style="--qbg:${q.bg[0]};--qbg2:${q.bg[1]}">
     <div class="qchip">${kIcon(q.kind)}${esc(KINDS[q.kind])}</div>
     <div class="qtxt">${esc(q.prompt)}${q.layout==="types"?q.vis:""}</div>
@@ -248,14 +252,23 @@ function showQ(){
   <form class="qform" id="qform" autocomplete="off">
     <input type="text" id="qin" placeholder="Type your answer" aria-label="Your answer" autocapitalize="off" spellcheck="false">
     <button class="btn" type="submit">Answer</button>
-    ${q.mask?'<button class="btn ghost" type="button" id="qhint">Reveal a letter</button>':""}
-    <button class="btn ghost" type="button" id="qskip">Skip</button>
+    ${q.mask?'<button class="btn ghost" type="button" id="qhint">Reveal a letter <kbd>Tab</kbd></button>':""}
+    <button class="btn ghost" type="button" id="qskip">Skip <kbd>Esc</kbd></button>
     <button class="btn ghost" type="button" id="qquit">Quit</button>
   </form>
   <div id="qfb"></div>`;
   $("#qin").focus();
   clearInterval(timer);
-  timer=setInterval(()=>{const e=$("#qtime");if(e&&!run.answered)e.textContent=((Date.now()-run.qt)/1000).toFixed(1)+"s"},100);
+  timer=setInterval(()=>{
+    if(run.answered)return;
+    const el=(Date.now()-run.qt)/1000,e=$("#qtime");
+    if(run.limit){
+      const left=Math.max(0,run.limit-el);
+      if(e){e.textContent=left.toFixed(1)+"s";e.classList.toggle("low",left<=5)}
+      const b=$("#qtbar");if(b){b.style.width=(100*left/run.limit)+"%";b.classList.toggle("low",left<=5)}
+      if(left<=0)answer(true,"time");
+    }else if(e)e.textContent=el.toFixed(1)+"s";
+  },100);
 }
 
 function showAnswer(q,ok){
@@ -299,7 +312,7 @@ function record(q,ok,ms){
   saveS();
 }
 
-function answer(skip){
+function answer(skip,why){
   if(run.answered)return;
   const q=run.qs[run.i];
   const raw=skip?"":$("#qin").value;
@@ -307,17 +320,18 @@ function answer(skip){
   const ms=Date.now()-run.qt;
   const ok=!skip&&q.accept.includes(norm(raw));
   run.answered=true;clearInterval(timer);
-  run.res.push({kind:q.kind,ok,ms,given:skip?"(skipped)":raw.trim(),answer:q.answer,hinted:q.shown.size>0});
+  run.res.push({kind:q.kind,ok,ms,given:skip?(why==="time"?"(time up)":"(skipped)"):raw.trim(),answer:q.answer,hinted:q.shown.size>0});
   record(q,ok,ms);
   $("#qin").disabled=true;
   const last=run.i===run.qs.length-1;
-  $("#qfb").innerHTML=`<div class="qres ${ok?"ok":"bad"}"><b>${ok?"Correct!":(skip?"Skipped.":"Not quite.")}</b><span>${(ms/1000).toFixed(1)}s${q.shown.size?" · "+q.shown.size+" letter"+(q.shown.size>1?"s":"")+" revealed":""}</span></div><div class="qform"><button class="btn" id="qnext" type="button">${last?"See results":"Next"}</button></div>`;
+  $("#qfb").innerHTML=`<div class="qres ${ok?"ok":"bad"}"><b>${ok?"Correct!":(why==="time"?"Time's up.":skip?"Skipped.":"Not quite.")}</b><span>${(ms/1000).toFixed(1)}s${ok&&run.auto?" · next question…":""}${q.shown.size?" · "+q.shown.size+" letter"+(q.shown.size>1?"s":"")+" revealed":""}</span></div><div class="qform"><button class="btn" id="qnext" type="button">${last?"See results":"Next"}</button></div>`;
   showAnswer(q,ok);
   $("#qnext").focus();
+  if(ok&&run.auto)adv=setTimeout(()=>{if(run&&!run.finished&&run.answered)$("#qnext")&&$("#qnext").click()},1000);
 }
 
 function finish(){
-  clearInterval(timer);
+  clearInterval(timer);clearTimeout(adv);
   const ok=run.res.filter(r=>r.ok).length,tot=Date.now()-run.t0;
   if(run.qs.length===10&&(!S.best||ok>S.best.ok||(ok===S.best.ok&&tot<S.best.ms)))S.best={ok,ms:tot};
   saveS();
@@ -332,7 +346,7 @@ function finish(){
 }
 
 function home(){
-  clearInterval(timer);
+  clearInterval(timer);clearTimeout(adv);
   run=null;
   P=prepare();
   const box=$("#qbody");
@@ -352,6 +366,10 @@ function home(){
   <div class="qhome">
     <p>Practice for the Pokemon Vortex Discord Quiz.</p>
     <div class="qform"><button class="btn" id="qstart" type="button"${av.length?"":" disabled"}>Start quiz (10 questions)</button></div>
+    <div class="qopts">
+      <div class="qopt"><span>Timer</span><div class="qseg" role="group" aria-label="Time per question">${LIMITS.map(l=>`<button type="button" class="qsegb" data-lim="${l}" aria-pressed="${(+opt().limit||0)===l}">${l?l+"s":"Off"}</button>`).join("")}</div></div>
+      <label class="qopt qchk"><input type="checkbox" id="qauto"${opt().auto!==false?" checked":""}><span>Auto-advance after a correct answer</span></label>
+    </div>
     <div class="qdrillhead">Drill a single type</div>
     <div class="qtabs" role="tablist" aria-label="Drill type">${tabs}</div>
     <div class="qform"><button class="btn qdrillbtn" id="qdrill" type="button"${pick?"":" disabled"}${pick?` style="${kVars(pick)}"`:""}>${pick?kIcon(pick)+"Drill "+esc(KINDS[pick])+" (10)":"Drill (10)"}</button></div>
@@ -366,18 +384,20 @@ function openQuiz(){
   home();
 }
 function closeQuiz(){
-  clearInterval(timer);
+  clearInterval(timer);clearTimeout(adv);
   $("#quiz").hidden=true;
 }
 window.VQ={open:openQuiz,close:closeQuiz};
 $("#quiz").addEventListener("click",e=>{
+  const sg=e.target.closest(".qsegb");
+  if(sg){opt().limit=+sg.dataset.lim;saveS();home();return}
   const tb=e.target.closest(".qtab");
   if(tb){if(!tb.disabled){pick=tb.dataset.k;home();const a=$(".qtab[aria-selected=true]");a&&a.focus()}return}
   const db=e.target.closest("#qdrill");
   const id=db?"qdrill":e.target.id;
   if(id==="qstart")startRun(avail(),10);
   else if(id==="qdrill"&&pick)startRun([pick],10);
-  else if(id==="qreset"){if(confirm("Reset all quiz stats and weak spots?")){S={t:{},weak:{},best:null};saveS();home()}}
+  else if(id==="qreset"){if(confirm("Reset all quiz stats and weak spots?")){S={t:{},weak:{},best:null,opt:S.opt};saveS();home()}}
   else if(id==="qhint")reveal();
   else if(id==="qskip")answer(true);
   else if(id==="qquit")home();
@@ -385,6 +405,7 @@ $("#quiz").addEventListener("click",e=>{
   else if(id==="qagain"){const k=run.qs.every(q=>q.kind===run.qs[0].kind)?[run.qs[0].kind]:avail();startRun(k,10)}
   else if(id==="qhome")home();
 });
+$("#quiz").addEventListener("change",e=>{if(e.target.id==="qauto"){opt().auto=e.target.checked;saveS()}});
 $("#quiz").addEventListener("submit",e=>{e.preventDefault();if(run&&!run.finished&&!run.answered)answer(false)});
 document.addEventListener("keydown",e=>{
   const tb=e.target.closest&&e.target.closest(".qtab");
@@ -400,6 +421,11 @@ document.addEventListener("keydown",e=>{
     return;
   }
   if($("#quiz").hidden||!run||run.finished)return;
+  if(!run.answered&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    const q=run.qs[run.i];
+    if(e.key==="Escape"){e.preventDefault();answer(true);return}
+    if(e.key==="Tab"&&q.mask){e.preventDefault();reveal();return}
+  }
   if(e.key==="Enter"&&run.answered){e.preventDefault();$("#qnext")&&$("#qnext").click()}
 });
 })();
