@@ -214,7 +214,7 @@ const BUILD={
     const shown=it.names.find(n=>!/\(/.test(n))||baseName(it.names[0]);
     const sps=it.names.map(sprOf).filter(Boolean).slice(0,9);
     const m=sps.length<=1?80:sps.length<=4?46:32;
-    return {prompt:"Which Pokémon created this footprint?",vis:`<div class="qcircle">${`<img class="qfoot" alt="" src="${esc(Q.footprintDir+it.file)}" onload="vfp(this)">`}</div>`,accept:[...acc],answer:multi?it.names.slice(0,3).join(", ")+(it.names.length>3?" …":""):shown,mask:multi?null:shown,layout:"circle",rv:{side:sps.length?`<div class="qcircle multi" style="--m:${m}%">${sps.join("")}</div>`:null,text:shown,noBar:multi}};
+    return {prompt:"Which Pokémon created this footprint?",vis:`<div class="qcircle">${`<img class="qfoot" alt="" src="${esc(Q.footprintDir+it.file)}" onload="vfp(this)">`}</div>`,accept:[...acc],answer:multi?it.names.slice(0,3).join(", ")+(it.names.length>3?" …":""):shown,mask:multi?null:shown,layout:"circle",rv:{side:sps.length?`<div class="qcircle multi pk" style="--m:${m}%">${sps.join("")}</div>`:null,pair:true,text:multi?it.names.slice(0,4).join(" · ")+(it.names.length>4?" +"+(it.names.length-4)+" more":""):shown}};
   }
 };
 
@@ -265,7 +265,7 @@ function showQ(){
   box.innerHTML=`
   <div class="qtop"><span>Question <b>${run.i+1}</b> / ${run.qs.length}</span><span>Score <b>${run.res.filter(r=>r.ok).length}</b></span><span id="qtime">${run.limit?run.limit.toFixed(1):"0.0"}s</span></div>
   ${run.limit?'<div class="qtimebar"><i id="qtbar"></i></div>':""}
-  <div class="qcard ${q.layout}${q.mask?" hashint":""}" style="--qbg:${q.bg[0]};--qbg2:${q.bg[1]}">
+  <div class="qcard ${q.layout} k-${q.kind}${q.mask?" hashint":""}" style="--qbg:${q.bg[0]};--qbg2:${q.bg[1]}">
     <div class="qchip">${kIcon(q.kind)}${esc(KINDS[q.kind])}</div>
     <div class="qtxt">${esc(q.prompt)}${q.layout==="types"?q.vis:""}</div>
     ${q.layout==="types"?"":`<div class="qside">${q.vis}</div>`}
@@ -298,7 +298,14 @@ function showAnswer(q,ok){
   if(!card)return;
   const rv=q.rv||{};
   card.classList.add(ok?"ok":"bad");
-  if(rv.side){const s=card.querySelector(".qside");if(s)s.innerHTML=rv.side}
+  if(rv.side){
+    const s=card.querySelector(".qside");
+    if(s){
+      const fp=rv.pair?s.querySelector(".qcircle"):null;
+      if(fp){s.classList.add("pair");s.innerHTML=fp.outerHTML.replace("qcircle","qcircle fp")+'<span class="qlink">=</span>'+rv.side}
+      else s.innerHTML=rv.side;
+    }
+  }
   if(rv.whos){const w=card.querySelector(".qwho");if(w)w.classList.add("rv")}
   if(rv.mark){const m=card.querySelector(".qcandy,.qhex");if(m)m.outerHTML=rv.mark}
   if(rv.extra){const t=card.querySelector(".qtxt");if(t)t.insertAdjacentHTML("beforeend",rv.extra)}

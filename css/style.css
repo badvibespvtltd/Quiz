@@ -320,3 +320,11 @@ kbd{font:600 10px/1 ui-monospace,Menlo,Consolas,monospace;border:1px solid curre
 .qtimebar i{display:block;height:100%;width:100%;background:#2a9d5c;transition:width .1s linear,background .2s}
 .qtimebar i.low{background:#d62828}
 #qtime.low{color:#d62828;font-weight:700}
+.qcard .qside.pair{gap:2%;justify-content:center;padding-right:5%;box-sizing:border-box}
+.qcard .qside.pair .qcircle{width:45%;flex:none;border-width:4px;margin:0}
+.qcard .qside.pair .qcircle.pk{padding:5%}
+.qside .qlink{flex:none;font-size:clamp(16px,3.6vw,28px);font-weight:800;line-height:1;text-shadow:0 2px 0 #0007}
+.qcard.k-footprint{grid-template-columns:34% 1fr}
+.qcard.k-footprint .qside .qcircle:not(.multi){width:min(86%,200px)}
+.qcard.k-footprint .qside.pair .qcircle{width:45%}
+.qcard.k-footprint .qtxt{padding-right:2%}
