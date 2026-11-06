@@ -53,7 +53,7 @@ const ALIAS={"Up Grade":["Upgrade"],"Kings Rock":["King's Rock"]};
 const SLOT=/[\p{L}\p{N}]/u;
 const ITEMFILE=new Map((IT||[]).map(x=>[norm(x.name),x.file]));
 
-let pick=null,adv=0;
+let pick=null,adv=0,PC=null;
 const LIMITS=[0,10,20,30,60];
 let S={t:{},weak:{},best:null,opt:{}},P=null,run=null,timer=0,appWasHidden=true,loaderWasHidden=true;
 try{const r=JSON.parse(localStorage.getItem(LS)||"null");if(r&&r.t)S=Object.assign(S,r)}catch(e){}
@@ -70,6 +70,7 @@ function nameAccept(n){
 }
 
 function prepare(){
+  if(PC)return PC;
   const D=window.VORTEX_DATA&&window.VORTEX_DATA.pokemon;
   if(!D)return null;
   const recs=Object.values(D);
@@ -106,6 +107,7 @@ function prepare(){
   out.whos=recs.filter(r=>icon(r)).map(r=>({key:r.name,rec:r}));
   out.badge=window.VORTEX_QUIZ_BADGES?Q.badges.map(b=>({key:badgeFile(b),name:b.name,region:b.region,file:badgeFile(b)})):[];
   out.footprint=FP?Object.keys(FP).map(d=>({key:d,dex:d,file:FP[d].file,names:FP[d].names})):[];
+  PC=out;
   return out;
 }
 
@@ -150,7 +152,25 @@ function bubble(letters){
   const f=n<=9?1:n<=13?.92:n<=17?.82:n<=22?.72:.64;
   return `<div class="qbub" style="font-size:calc(clamp(14px,2.6vw,20px)*${f})">${letters.map((c,k)=>`<span style="left:${(50+pts[k][0]).toFixed(1)}%;top:${(50+pts[k][1]).toFixed(1)}%;transform:translate(-50%,-50%)">${esc(c)}</span>`).join("")}</div>`;
 }
-const img=(src,cls)=>`<img class="${cls||""}" alt="" src="${esc(src)}">`;
+const img=(src,cls)=>`<img class="${cls||""}" alt="" decoding="async" src="${esc(src)}">`;
+const WARM=new Map();
+const unesc=s=>s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,"&");
+function warm(q){
+  if(!q||q.warmed)return;
+  q.warmed=true;
+  const h=[q.vis,q.rv&&q.rv.side,q.rv&&q.rv.extra,q.rv&&q.rv.mark].join("");
+  const re=/<img[^>]*\ssrc="([^"]+)"/g;
+  let m;
+  while((m=re.exec(h))){
+    const u=unesc(m[1]);
+    if(/^data:/.test(u)||WARM.has(u))continue;
+    const im=new Image();
+    im.decoding="async";
+    im.src=u;
+    WARM.set(u,im);
+    if(im.decode)im.decode().catch(()=>{});
+  }
+}
 
 const DEX=()=>(window.VORTEX_DATA&&window.VORTEX_DATA.pokemon)||{};
 const sprOf=n=>{const r=DEX()[n];return r&&icon(r)?img(icon(r),"qspr"):""};
@@ -219,6 +239,7 @@ function startRun(kinds,n){
   const used=new Set();
   const plan=kinds.length===1?Array(n).fill(kinds[0]):planKinds(n,kinds);
   run={qs:plan.map(k=>makeQ(k,used)),i:0,res:[],t0:Date.now(),qt:0,answered:false,limit:+opt().limit||0,auto:opt().auto!==false};
+  warm(run.qs[0]);warm(run.qs[1]);
   showQ();
 }
 
@@ -238,6 +259,7 @@ function slotCount(q){return [...q.mask].filter(c=>SLOT.test(c)).length}
 function showQ(){
   clearTimeout(adv);
   const q=run.qs[run.i];
+  warm(q);warm(run.qs[run.i+1]);warm(run.qs[run.i+2]);
   run.qt=Date.now();run.answered=false;
   const box=$("#qbody");
   box.innerHTML=`
